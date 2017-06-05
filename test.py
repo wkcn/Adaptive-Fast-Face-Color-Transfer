@@ -143,13 +143,12 @@ def deal(rgb):
     SaBorder = get_border(Sa)
     SbBorder = get_border(Sb)
     b2 = (((lab[:,:,1] >= SaBorder[0]) & (lab[:,:,1] <= SaBorder[1])) | ((lab[:,:,2] >= SbBorder[0]) & (lab[:,:,2] <= SbBorder[1])))
-    '''
+    plt.subplot(121)
     plt.imshow(b, "gray")
-    plt.show()
+    plt.subplot(122)
     plt.imshow(b2, "gray")
     plt.show()
-    '''
-    return lab, b2, Sa, Sb, SaBorder, SbBorder, np.mean(lab[:,:,1]), np.mean(lab[:,:,2])
+    return lab, b2, Sa, Sb, SaBorder, SbBorder, np.mean(lab[:,:,1][b2]), np.mean(lab[:,:,2][b2])
 
 def face_color_transfer(source, target):
     slab, sb, Sa, Sb, [sab, sae],[sbb, sbe], sam, sbm = deal(source)
@@ -181,7 +180,6 @@ def face_color_transfer(source, target):
         b = a < tam
         a[b] = rsa1 * (a[b] - tam) + sam
         a[~b] = rsa2 * (a[~b] - tam) + sam
-        return a
         # Correction
         b1 = (a < sab) & (a > sab - 2)
         b2 = (a > sae) & (a < 2 + sae)
@@ -189,7 +187,8 @@ def face_color_transfer(source, target):
         b4 = ~(b1 | b2 | b3)
         a[b1] = sab
         a[b2] = sae
-        a[b4] = aold[b4]
+        print np.sum(b1), np.sum(b2), np.sum(b3), np.sum(b4)
+        #a[b4] = aold[b4]
         return a
 
     plt.subplot(121)
