@@ -9,9 +9,12 @@ def RGB2YCbCr(rgb):
     R = rgb[:,:,0]
     G = rgb[:,:,1]
     B = rgb[:,:,2]
+
+
     Y = 0.257*R+0.504*G+0.098*B+16
     Cb = -0.148*R-0.291*G+0.439*B+128
     Cr = 0.439*R-0.368*G-0.071*B+128
+
     return np.dstack([Y, Cb, Cr])
 
 def RGB2Lab(rgb):
@@ -113,12 +116,13 @@ def count_array(w, size):
 
 def get_border(Sa):
     si = np.argmax(Sa)
-    t1 = si
-    t2 = si
+    t1 = si - 1
+    t2 = si + 1
     diff = 0
     while t1 >= 0 and t2 <= 255: 
         diff += (Sa[t1] - Sa[t2])
-        if abs(diff) > 2 * max(t1, t2) or Sa[t1] == 0 or Sa[t2] == 0:
+        if abs(diff) > 2 * max(Sa[t1], Sa[t2]) or Sa[t1] == 0 or Sa[t2] == 0:
+            print "Sa", Sa[t1], Sa[t2]
             return [t1, t2]
         t1 -= 1
         t2 += 1
@@ -145,37 +149,82 @@ def deal(rgb):
     plt.imshow(b2, "gray")
     plt.show()
     '''
-    return lab, b2, SaBorder, SbBorder, np.mean(lab[:,:,1]), np.mean(lab[:,:,2])
+    return lab, b2, Sa, Sb, SaBorder, SbBorder, np.mean(lab[:,:,1]), np.mean(lab[:,:,2])
 
 def face_color_transfer(source, target):
-    slab, sb, [sab, sae],[sbb, sbe], sam, sbm = deal(source)
-    tlab, tb, [tab, tae],[tbb, tbe], tam, tbm = deal(target)
+    slab, sb, Sa, Sb, [sab, sae],[sbb, sbe], sam, sbm = deal(source)
+    tlab, tb, Ta, Tb, [tab, tae],[tbb, tbe], tam, tbm = deal(target)
+    print "[sab, sae] = [%d, %d], [sbb, sbe] = [%d, %d]" % (sab,sae,sbb,sbe)
+    print "[tab, tae] = [%d, %d], [tbb, tbe] = [%d, %d]" % (tab,tae,tbb,tbe)
+
+    print sam, sbm, tam, tbm
+    sam = (sab + sae) / 2.0
+    sbm = (sbb + sbe) / 2.0
+    tam = (tab + tae) / 2.0
+    tbm = (tbb + tbe) / 2.0
+    print sam, sbm, tam, tbm
+
+    plt.plot(Sa, 'r.')
+    plt.plot(Ta, 'r*')
+    plt.plot(Sb, 'b.')
+    plt.plot(Tb, 'b*')
+    plt.show()
+
     rsa1 = (sam - sab) * 1.0 / (tam - tab)
     rsa2 = (sae - sam) * 1.0 / (tae - tam)
     rsb1 = (sbm - sbb) * 1.0 / (tbm - tbb)
     rsb2 = (sbe - sbm) * 1.0 / (tbe - tbm)
-    def transfer(a, sam, tam, rsa1, rsa2):
+    print rsa1, rsa2, rsb1, rsb2
+
+    def transfer(a, sam, tam, rsa1, rsa2, sab, sae):
+        aold = a.copy()
         b = a < tam
         a[b] = rsa1 * (a[b] - tam) + sam
         a[~b] = rsa2 * (a[~b] - tam) + sam
-    transfer(tlab[:,:,1], sam, tam, rsa1, rsa2)
-    transfer(tlab[:,:,2], sbm, tbm, rsb1, rsb2)
+        return a
+        # Correction
+        b1 = (a < sab) & (a > sab - 2)
+        b2 = (a > sae) & (a < 2 + sae)
+        b3 = (a > sab) & (a < sae)
+        b4 = ~(b1 | b2 | b3)
+        a[b1] = sab
+        a[b2] = sae
+        a[b4] = aold[b4]
+        return a
+
+    plt.subplot(121)
+    plt.imshow(sb, "gray")
+    plt.subplot(122)
+    plt.imshow(tb, "gray")
+    plt.show()
+
+    tlab[:,:,1][tb] = transfer(tlab[:,:,1][tb], sam, tam, rsa1, rsa2, sab, sae)
+    tlab[:,:,2][tb] = transfer(tlab[:,:,2][tb], sbm, tbm, rsb1, rsb2, sbb, sbe)
     tlab[:,:,1:3] -= 128
+    tlab[:,:,1:3] = np.clip(tlab[:,:,1:3], -128, 128)
     return Lab2RGB(tlab)
 
+def imread(filename):
+    im = mpimg.imread(filename)
+    if im.dtype != np.uint8:
+        im = np.clip(np.round(im * 255), 0, 255).astype(np.uint8)
+    return im
+
 # RGB
-source = mpimg.imread("pic/boy.jpg")
-target = mpimg.imread("pic/black.jpg")
+source = imread("pic/boy6.png")
+target = imread("pic/girl2.png")
 res = face_color_transfer(source, target)
 
+plt.subplot(131)
 plt.title("source")
 plt.imshow(source)
-plt.show()
 
+plt.subplot(132)
 plt.title("target")
 plt.imshow(target)
-plt.show()
 
+plt.subplot(133)
 plt.title("Transfered")
 plt.imshow(res)
+
 plt.show()

@@ -1,0 +1,13 @@
+Lab
+基于生理特征
+http://blog.csdn.net/carson2005/article/details/7200440
+
+RGB LAB 互换
+https://wenku.baidu.com/view/055b8defaeaad1f346933f8f.html
+
+对论文的更正和改进：
+
+更正：
+收敛公式错误max{t1,t2}应为max{Sa(t1), Sa(t2)}
+平均值(论文用的是纯图像，尝试肤色加权均值，两边均值，两边均值最好）
+肤色选择不一样, 怀疑是颜色空间转换系数的问题
