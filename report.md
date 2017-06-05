@@ -186,8 +186,15 @@ Lab空间下的a、b分量分布, 其中红色点为a分量，蓝色点为b分�
 检测出肤色区域后，找出这些区域的所有连通域。对于每一个连通域，可以假设其对应一个人，单独对这个连通域进行收敛区间的估计和肤色迁移，这样可以处理同一张相片中不同肤色的人的肤色迁移。
 
 ## 感受
+在这次阅读论文的过程中，我觉得这篇肤色迁移的文章比较有趣，因此花了比较长的时间对论文进行复现。对于我来说，复现的难点在于颜色空间的转换，以及对算法的调整。我发现通过复现，将复现的结果和论文的结果进行对比，更能提高自己对论文的理解，同时也有资格质疑论文中的结果。在复现的过程中，我发现两个颜色空间的转换，有不同系数的转换方法，比如RGB转YCbCr, 不同的方法得到的是不同的YCbCr，需要注意转换是基于哪一个标准。这篇论文也给了我关于基于颜色的自适应检测方法的启发。
 
+## 参考资料
+1. Lab颜色空间 by ChenLee_1
+http://blog.csdn.net/carson2005/article/details/7200440
+2. RGB2Lab and Lab2RGB By Mark Ruzon from C code by Yossi Rubner, 23 September 1997.
 
 ## 附录
-复现的代码地址：
+1. 论文
+Wei W，Ma J F．Adaptive fast face color transfer[J]．Joumal ofIlllage and Graphics，2016，21(2)：0129-0134．[魏玮，马军福．自适应的快速人脸肤色转移[J]．中国图象图形学报，2016，21(2)：0129．0134.]$${}$$[DOI：10．11834／jig．20160201]
+2. 我的算法复现代码地址
 https://github.com/wkcn/Adaptive-Fast-Face-Color-Transfer
