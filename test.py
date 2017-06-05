@@ -111,32 +111,71 @@ def count_array(w, size):
     d = count(w)
     return np.array([d.get(i, 0) for i in range(size)])
 
+def get_border(Sa):
+    si = np.argmax(Sa)
+    t1 = si
+    t2 = si
+    diff = 0
+    while t1 >= 0 and t2 <= 255: 
+        diff += (Sa[t1] - Sa[t2])
+        if abs(diff) > 2 * max(t1, t2) or Sa[t1] == 0 or Sa[t2] == 0:
+            return [t1, t2]
+        t1 -= 1
+        t2 += 1
+    t1 = max(0, t1)
+    t2 = min(255, t2)
+    return [t1, t2]
+
 
 def deal(rgb):
     y = RGB2YCbCr(rgb)
     b = (y[:,:,1] >= 77) & (y[:,:,1] <= 127) & (y[:,:,2] >= 133) & (y[:,:,2] <= 173)
-    lab = RGB2Lab(rgb)
-    rrr = Lab2RGB(lab)
+    lab = np.round(RGB2Lab(rgb)).astype(np.int)
+    # a, b += 128
+    lab[:,:,1:3] += 128
+    # 0 ~ 255
     Sa = count_array(lab[:,:,1][b], 256) 
     Sb = count_array(lab[:,:,2][b], 256) 
-
+    SaBorder = get_border(Sa)
+    SbBorder = get_border(Sb)
+    b2 = (((lab[:,:,1] >= SaBorder[0]) & (lab[:,:,1] <= SaBorder[1])) | ((lab[:,:,2] >= SbBorder[0]) & (lab[:,:,2] <= SbBorder[1])))
+    '''
+    plt.imshow(b, "gray")
+    plt.show()
+    plt.imshow(b2, "gray")
+    plt.show()
+    '''
+    return lab, b2, SaBorder, SbBorder, np.mean(lab[:,:,1]), np.mean(lab[:,:,2])
 
 def face_color_transfer(source, target):
-    pass
+    slab, sb, [sab, sae],[sbb, sbe], sam, sbm = deal(source)
+    tlab, tb, [tab, tae],[tbb, tbe], tam, tbm = deal(target)
+    rsa1 = (sam - sab) * 1.0 / (tam - tab)
+    rsa2 = (sae - sam) * 1.0 / (tae - tam)
+    rsb1 = (sbm - sbb) * 1.0 / (tbm - tbb)
+    rsb2 = (sbe - sbm) * 1.0 / (tbe - tbm)
+    def transfer(a, sam, tam, rsa1, rsa2):
+        b = a < tam
+        a[b] = rsa1 * (a[b] - tam) + sam
+        a[~b] = rsa2 * (a[~b] - tam) + sam
+    transfer(tlab[:,:,1], sam, tam, rsa1, rsa2)
+    transfer(tlab[:,:,2], sbm, tbm, rsb1, rsb2)
+    tlab[:,:,1:3] -= 128
+    return Lab2RGB(tlab)
 
 # RGB
 source = mpimg.imread("pic/boy.jpg")
 target = mpimg.imread("pic/black.jpg")
-deal(source)
+res = face_color_transfer(source, target)
 
-plt.subplot(121)
 plt.title("source")
 plt.imshow(source)
-plt.subplot(122)
+plt.show()
+
 plt.title("target")
 plt.imshow(target)
 plt.show()
 
-result = face_color_transfer(source, target)
-plt.imshow(result)
+plt.title("Transfered")
+plt.imshow(res)
 plt.show()
